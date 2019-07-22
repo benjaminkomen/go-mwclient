@@ -83,14 +83,25 @@ func (q *Query) Next() (done bool) {
 
 	cont, err := q.resp.GetObject("continue")
 	if err != nil {
-		return false
+		cont, err = q.resp.GetObject("query-continue")
+		if err != nil {
+			return false
+		}
 	}
 	contMap := cont.Map()
 	for k, v := range contMap {
 		value, err := v.String()
 		if err != nil {
-			q.err = fmt.Errorf("response processing error: %v", err)
-			return false
+			obj, err := v.Object()
+			if err != nil {
+				q.err = fmt.Errorf("response processing error: %v", err)
+				return false
+			}
+			value, err = obj.GetString("cmcontinue")
+			if err != nil {
+				q.err = fmt.Errorf("response processing error: %v", err)
+				return false
+			}
 		}
 		q.params.Set(k, value)
 	}
